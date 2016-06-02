@@ -1,0 +1,76 @@
+{
+            "template": "std_*",
+            "settings":{
+                "number_of_shards": 1,
+                "number_of_replicas": 0
+            },
+            "aliases": {
+                "content":{}
+            },
+            "mappings": {
+                "xueqiu":{
+                    "dynamic_templates":[{
+                        "strings":{
+                            "match_mapping_type":"string",
+                            "mapping":{
+                                "type":"string",
+                                "index":"no"
+                            }
+                        }
+                    }],
+                    "properties": {
+                        "enrich": {
+                            "properties": {
+                                "instrument": {
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "index": "not_analyzed"
+                                        }
+                                    }
+                                },
+                                "name_list": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                },
+                                "code_list": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                },
+                                "user_list": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                },
+                                "plain_text": {
+                                    "type": "string",
+                                    "index": "not_analyzed"
+                                },
+                                "auother": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "long"
+                                        },
+                                        "screen_name": {
+                                            "type": "string",
+                                            "index": "not_analyzed"
+                                        }
+                                    }
+                                },
+                                "post_time": {
+                                    "type": "date",
+                                    "format": "epoch_millis"
+                                },
+                                "post_time_str": {
+                                    "type": "date",
+                                    "format": "yyyy-MM-dd HH:mm:ss"
+                                },
+                                "post_time_local_str": {
+                                    "type": "date",
+                                    "format": "yyyy-MM-dd HH:mm:ss"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }

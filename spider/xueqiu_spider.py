@@ -1,5 +1,6 @@
 # coding:utf-8
 
+from __future__ import absolute_import
 from spider.basic_spider import BasicSpider
 from utils.logger import logger, debug_logger
 import urllib2
@@ -12,6 +13,7 @@ from processor.common_processor import XueQiuProcessor
 import time
 import random
 import config
+import spider.utils
 
 
 class XueQiuSpider(BasicSpider):
@@ -27,9 +29,8 @@ class XueQiuSpider(BasicSpider):
         self.throttle_page = 5
 
     def __random_choose_agent(self):
-        idx = random.randint(0, len(self.user_agents)-1)
-        self.headers['User-Agent'] = self.user_agents[idx]
-        logger.debug('UserAgent:' + self.user_agents[idx])
+        self.headers['User-Agent'] = spider.utils.get_default_header()
+        logger.debug('UserAgent:' + self.headers['User-Agent'])
 
     def run(self):
         logger.info('spider is running')
@@ -75,24 +76,9 @@ class XueQiuSpider(BasicSpider):
             time.sleep(sleep_count)
 
     def init_client(self):
-        # chrome, firefox, safari
-        self.user_agents = [
-            'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-            'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0',
-            'Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0',
-            'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.93 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1944.0 Safari/537.36',
-            'Mozilla/5.0 (Windows; U; Windows NT 6.1; tr-TR) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27',
-            'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_7; da-dk) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1',
-            'Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-HK) AppleWebKit/533.18.1 (KHTML, like Gecko) Version/5.0.2 Safari/533.18.5'
-        ]
-        self.headers = {
-            'ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, sdch',
-            'Accept-Language': 'en-US,en;q=0.8,zh-CN;q=0.6,zh;q=0.4,ja;q=0.2,zh-TW;q=0.2',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'
-        }
+        self.headers = spider.utils.get_default_header()
+        spider.utils.get_default_header()
+
         self.cookie = cookielib.CookieJar()
         proxy_list = {'http':'http://10.40.14.56:8080'}
         proxy = ProxyHandler(proxies=proxy_list)

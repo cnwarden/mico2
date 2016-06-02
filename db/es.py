@@ -1,121 +1,54 @@
-
 from elasticsearch import Elasticsearch
 from utils.logger import logger
 from config import *
 from json import JSONEncoder
 import codecs
 import operator
-import datetime
 import pytz
+import datetime
+
 
 class ESWrapper(object):
-
     def __init__(self):
         host = ES_HOST
         logger.info('connecting to es db:%s' % (host))
         self.client = Elasticsearch(hosts=host)
+        self.idx = self.get_index_name()
 
-    def init_index(self):
-        self.client.indices.delete(ES_INDEX_ALIAS, ignore=[404])
-        self.client.indices.create(ES_INDEX, body=
-        {
-            'settings':{
-                'number_of_shards': 1,
-                'number_of_replicas': 1,
-            },
-            'aliases': {
-                ES_INDEX_ALIAS:{}
-            },
-            "mappings": {
-                ES_DOC_TYPE:{
-                    "dynamic_templates":[{
-                        "strings":{
-                            "match_mapping_type":"string",
-                            'mapping':{
-                                'type':'string',
-                                'index':'no'
-                            }
-                        }
-                    }],
-                    "properties": {
-                        'enrich': {
-                            'properties': {
-                                'instrument': {
-                                    'properties': {
-                                        'code': {
-                                            'type': 'string',
-                                            'index': 'not_analyzed'
-                                        }
-                                    }
-                                },
-                                'name_list': {
-                                    'type': 'string',
-                                    'index': 'not_analyzed'
-                                },
-                                'code_list': {
-                                    'type': 'string',
-                                    'index': 'not_analyzed'
-                                },
-                                'user_list': {
-                                    'type': 'string',
-                                    'index': 'not_analyzed'
-                                },
-                                'plain_text': {
-                                    'type': 'string',
-                                    'index': 'not_analyzed'
-                                },
-                                'auother': {
-                                    'properties': {
-                                        'id': {
-                                            'type': 'long'
-                                        },
-                                        'screen_name': {
-                                            'type': 'string',
-                                            'index': 'not_analyzed'
-                                        }
-                                    }
-                                },
-                                'post_time': {
-                                    'type': 'date',
-                                    'format': 'epoch_millis'
-                                },
-                                'post_time_str': {
-                                    'type': 'date',
-                                    'format': 'yyyy-MM-dd HH:mm:ss'
-                                },
-                                'post_time_local_str': {
-                                    'type': 'date',
-                                    'format': 'yyyy-MM-dd HH:mm:ss'
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        })
-        logger.info('index is initalized')
+    def get_index_name(self):
+        ld = datetime.datetime.now(LOCAL_TIMEZONE)
+        idx = 'std_content_%s' % ld.strftime("%Y%m")
+        return idx
+
+    def create_if_not_exist(self):
+        idx = self.get_index_name()
+        if(self.client.indices.exists(idx)):
+            pass
+        else:
+            self.idx = idx
+            self.client.indices.create(index=idx)
+            logger.info('created new index name:' + idx)
 
     def insert(self, body):
-        # ignore document if existed
-        # 409 exist?
-        self.client.create(ES_INDEX_ALIAS, ES_DOC_TYPE, body, id=str(body['raw']['id']), ignore=[404, 400, 409])
+        self.create_if_not_exist()
+        self.client.create(self.idx, ES_DOC_TYPE, body, id=str(body['raw']['id']), ignore=[404, 400, 409])
 
     def get_last_id(self, instrument):
         last_doc = 0
         try:
             doc = self.client.search(index=ES_INDEX_ALIAS, doc_type=ES_DOC_TYPE, body=
             {
-                "size":1,
-                "query":{
+                "size": 1,
+                "query": {
                     "term": {
-                        "enrich.instrument.code":{
-                            "value" : instrument
+                        "enrich.instrument.code": {
+                            "value": instrument
                         }
                     }
                 },
-                "sort":[
+                "sort": [
                     {
-                        "raw.id":{"order":"desc"}
+                        "raw.id": {"order": "desc"}
                     }
                 ]
             })
@@ -131,21 +64,21 @@ class ESWrapper(object):
         last_doc = None
         search_body = {
             "fields": [
-               "enrich.instrument.code",
-               "enrich.id",
-               "enrich.plain_text",
+                "enrich.instrument.code",
+                "enrich.id",
+                "enrich.plain_text",
                 'enrich.post_time_local_str'
             ],
-            'sort':[
+            'sort': [
                 {
-                    'raw.id': {'order':'desc'}
+                    'raw.id': {'order': 'desc'}
                 }
             ]
         }
         if sym:
-            search_body['query'] = { 'term': { 'enrich.instrument.code': sym } }
+            search_body['query'] = {'term': {'enrich.instrument.code': sym}}
         else:
-            search_body['query'] = { 'match_all': {} }
+            search_body['query'] = {'match_all': {}}
 
         doc = self.client.search(index=ES_INDEX_ALIAS, doc_type=ES_DOC_TYPE, body=search_body, size=count)
         if doc and doc.has_key('hits') and doc['hits']['total'] > 0:
@@ -159,11 +92,11 @@ class ESWrapper(object):
         dump_file = 'dump_%s.json' % (dstr)
         fp = codecs.open(dump_file, mode='w', encoding='utf-8')
         pos = self.client.search(index=ES_INDEX_ALIAS, doc_type=ES_DOC_TYPE,
-                                 search_type = 'scan',
+                                 search_type='scan',
                                  scroll='2m',
                                  size=1000,
                                  body={
-                                     'query':{
+                                     'query': {
                                          'match_all': {}
                                      }
                                  })
@@ -172,7 +105,7 @@ class ESWrapper(object):
         total_size = 0
         while (scroll_size > 0):
             logger.info('scrolling...')
-            page = self.client.scroll(scroll_id = sid, scroll = '2m')
+            page = self.client.scroll(scroll_id=sid, scroll='2m')
             # Update the scroll ID
             sid = page['_scroll_id']
             # Get the number of results that we returned in the last scroll
@@ -188,14 +121,14 @@ class ESWrapper(object):
     def get_stats(self, inst):
         count = 0
         search_body = {
-                         'query':{
-                            'term':{
-                                 'enrich.code_list':{
-                                    'value': inst
-                                 }
-                             }
-                         }
-                     }
+            'query': {
+                'term': {
+                    'enrich.code_list': {
+                        'value': inst
+                    }
+                }
+            }
+        }
 
         search_body['filter'] = self.__get_filter_query()
 
@@ -226,13 +159,13 @@ class ESWrapper(object):
 
     def __get_filter_query(self):
         return {
-            'range':{
-                    'enrich.post_time_local_str':{
-                        'from': self.__get_midnight(),
-                        'to': self.__get_now()
-                    }
+            'range': {
+                'enrich.post_time_local_str': {
+                    'from': self.__get_midnight(),
+                    'to': self.__get_now()
                 }
             }
+        }
 
     def get_all_ranks(self):
         user_dict = {}
@@ -240,16 +173,16 @@ class ESWrapper(object):
         name_dict = {}
 
         search_body = {
-                         'query':{
-                             'match_all': {}
-                         }
-                     }
+            'query': {
+                'match_all': {}
+            }
+        }
         filterByTime = True
         if filterByTime:
             search_body['filter'] = self.__get_filter_query()
 
         pos = self.client.search(index=ES_INDEX_ALIAS, doc_type=ES_DOC_TYPE,
-                                 search_type = 'scan',
+                                 search_type='scan',
                                  scroll='2m',
                                  size=1000,
                                  body=search_body)
@@ -258,7 +191,7 @@ class ESWrapper(object):
         total_size = 0
         while (scroll_size > 0):
             logger.info('scrolling...')
-            page = self.client.scroll(scroll_id = sid, scroll = '2m')
+            page = self.client.scroll(scroll_id=sid, scroll='2m')
             # Update the scroll ID
             sid = page['_scroll_id']
             # Get the number of results that we returned in the last scroll
@@ -271,17 +204,17 @@ class ESWrapper(object):
                 names = doc['_source']['enrich']['name_list']
                 for user in users:
                     if user_dict.has_key(user):
-                        user_dict[user] +=1
+                        user_dict[user] += 1
                     else:
                         user_dict[user] = 1
                 for code in codes:
                     if code_dict.has_key(code):
-                        code_dict[code] +=1
+                        code_dict[code] += 1
                     else:
                         code_dict[code] = 1
                 for name in names:
                     if name_dict.has_key(name):
-                        name_dict[name] +=1
+                        name_dict[name] += 1
                     else:
                         name_dict[name] = 1
 
@@ -302,3 +235,6 @@ class ESWrapper(object):
         }
 
 
+if __name__ == '__main__':
+    es = ESWrapper()
+    es.create_if_not_exist()
