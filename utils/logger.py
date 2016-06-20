@@ -2,8 +2,13 @@
 import logging
 from logging import Formatter, StreamHandler, FileHandler
 from logging.handlers import RotatingFileHandler
+import os
 
 __all__ = ['logger', 'debug_logger', 'master_logger', 'worker_logger', 'operation_logger']
+
+
+if not os.path.exists("log/"):
+    os.mkdir("log/")
 
 logger = logging.getLogger('mico2')
 logger.setLevel(logging.DEBUG)

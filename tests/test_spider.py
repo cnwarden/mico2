@@ -1,17 +1,17 @@
 
 
 from unittest import TestCase
-from spider.xueqiu_spider import XueQiuSpider
+import spider
 
 
 class TestSpider(TestCase):
 
     def setUp(self):
-        self.spider = XueQiuSpider()
+        self.spider = spider.ReferenceSpider()
 
     def tearDown(self):
         pass
 
     def testStart(self):
-        # self.spider.run()
+        self.spider.run()
         pass

@@ -32,11 +32,20 @@ SPIDER = [
     {
         'name': 'spider-a',
         'class': 'spider.east_spider.EastSpider',
-        'enabled': True,
+        'enabled': False,
         'pipelines': [
                         'pipeline.SimplePipeline',
                         'pipeline.ESPipeline',
                         'pipeline.StorePipeline'
+                    ]
+    },
+
+    {
+        'name': 'spider-b',
+        'class': 'spider.reference_spider.ReferenceSpider',
+        'enabled': True,
+        'pipelines': [
+                        'pipeline.SaveToDictPipeline'
                     ]
     }
 ]

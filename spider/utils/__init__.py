@@ -1,6 +1,12 @@
 # coding:utf-8
 
 import random
+import gzip
+import StringIO
+
+"""
+using gzip to enable stream smaller
+"""
 
 USER_AGENTS = [
             'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
@@ -30,3 +36,11 @@ def get_user_agent():
 
 def get_default_header():
     return DEFAULT_HTTP_HEADER
+
+
+def unzip_stream(stream):
+    buf = StringIO.StringIO(stream)
+    f = gzip.GzipFile(fileobj=buf)
+    return f.read()
+
+
